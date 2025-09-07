@@ -20,13 +20,14 @@ app.add_middleware(
 
 @app.post("/categorize-transcript")
 async def api_categorize_transcript(payload: dict):
-    transcript = payload.get("transcript", "")
-    fields = payload.get("fields", [])
-    if not transcript or not isinstance(fields, list) or not fields:
-        raise HTTPException(status_code=400, detail="Provide 'transcript' (str) and 'fields' (list).")
+    transcript = payload.get("transcript")
+    if not transcript or not isinstance(transcript, str):
+        raise HTTPException(status_code=400, detail="Provide 'transcript' (str).")
+
     try:
-        provider = GeminiProvider()  # or choose via env if you add that logic later
-        result = categorize_transcript(transcript, fields, provider=provider)
+        provider = GeminiProvider()
+        # Do not require fields from user — use categorize_transcript default
+        result = categorize_transcript(transcript, provider=provider)
         return {"fields": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
