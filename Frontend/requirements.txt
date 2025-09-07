@@ -1,5 +1,8 @@
 streamlit
 pandas
-st-audiorec
+git+https://github.com/stefanrmmr/streamlit_audio_recorder.git
 openai-whisper
 torch
+requests
+fastapi
+uvicorn
