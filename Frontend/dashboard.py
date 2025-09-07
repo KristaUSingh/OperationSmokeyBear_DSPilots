@@ -17,7 +17,7 @@ st.title("WELCOME TO OPERATION SMOKEY BEAR 🔥🧸!")
 CSV_FILE = "incidents_master.csv"
 
 # Load fire-specific columns from mod_fire.csv
-fire_columns = pd.read_csv("mod_fire.csv")["name"].dropna().tolist()
+fire_columns = pd.read_csv("Frontend/mod_fire.csv")["name"].dropna().tolist()
 
 # 33 column schema 
 COLUMNS = [
