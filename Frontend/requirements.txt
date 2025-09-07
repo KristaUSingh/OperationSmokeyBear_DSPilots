@@ -1,7 +1,10 @@
 streamlit
 pandas
-whisper
-torch
 streamlit-mic-recorder
+openai-whisper
+torch
+requests
+numpy<=2.2
+numba
 fastapi
 uvicorn
