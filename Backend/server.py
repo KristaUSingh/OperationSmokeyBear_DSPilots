@@ -67,3 +67,7 @@ async def api_categorize_audio(audio: UploadFile = File(...), fields: str = Form
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Operation Smokey Bear backend is running!"}
