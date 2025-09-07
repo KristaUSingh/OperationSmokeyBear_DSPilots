@@ -1,7 +1,7 @@
 # providers.py
 import os, json
 from typing import Dict, List, Optional
-from .prompt import build_extraction_prompt
+from .prompt import build_extraction_prompt, field_descriptions
 
 # ---- Provider interface ----
 class LLMProvider:
