@@ -2,7 +2,6 @@ streamlit
 pandas
 whisper
 torch
-streamlit-audiorecorder
+streamlit-mic-recorder
 fastapi
 uvicorn
-pyaudioop

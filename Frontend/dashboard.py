@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from audiorecorder import audiorecorder
+from st_mic_recorder import mic_recorder
 import whisper
 import requests
 import tempfile
@@ -71,27 +71,29 @@ def save_incident(data):
 # Tabs
 tab1, tab2, tab3 = st.tabs(["🎙️ Record / Input", "🧾 Review & Save", "📊 Dashboard"])
 
-# Tab 1: Record / Input
 with tab1:
     st.header("Record or enter incident details")
-
     st.divider()
+
+    # 🎤 Record audio
+    audio = mic_recorder(
+        start_prompt="Start recording",
+        stop_prompt="Stop recording",
+        just_once=True,
+        use_container_width=True
+    )
 
     incident_text = ""
 
-    # 🎤 Audio recorder
-    audio = audiorecorder("Start recording", "Stop recording")
-
-    if len(audio) > 0:
-        # Playback the recorded audio
-        st.audio(audio.tobytes(), format="audio/wav")
-
-        # Save to temp file
+    if audio is not None:
+        # Save audio
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-            f.write(audio.tobytes())
+            f.write(audio)
             audio_path = f.name
 
-        # 🔊 Local Whisper transcription
+        st.audio(audio, format="audio/wav")
+
+        # 🔊 Transcribe with Whisper
         model = whisper.load_model("base")
         result = model.transcribe(audio_path)
         incident_text = result["text"]
@@ -100,7 +102,6 @@ with tab1:
         st.success("Audio transcribed successfully (Whisper local)!")
 
     else:
-        # Fallback manual text input
         incident_text = st.text_area("Or type/paste the incident description:")
 
     # Parse incident button
@@ -111,7 +112,6 @@ with tab1:
                 json={"transcript": incident_text},
                 timeout=30
             )
-
             if response.status_code == 200:
                 parsed = response.json().get("fields", {})
                 st.session_state["parsed"] = parsed
@@ -120,7 +120,6 @@ with tab1:
                 st.error(f"Backend error: {response.text}")
         except Exception as e:
             st.error(f"Failed to connect to backend: {e}")
-
 
 
 # Tab 2: Review & Save 
