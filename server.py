@@ -3,8 +3,8 @@ import json
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from med_categorizer.categorize import categorize_transcript, categorize_audio_file
-from med_categorizer.providers import GeminiProvider
+from incident_parser.categorize import categorize_transcript, categorize_audio_file
+from incident_parser.providers import GeminiProvider
 
 load_dotenv()  # optional: if you're using .env for GOOGLE_API_KEY
 

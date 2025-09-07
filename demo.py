@@ -1,7 +1,7 @@
 # demo.py
 import os
-from med_categorizer.categorize import categorize_transcript
-from med_categorizer.providers import GeminiProvider  # or use your _default_provider()
+from incident_parser.categorize import categorize_transcript
+from incident_parser.providers import GeminiProvider  # or use your _default_provider()
 
 # Make sure your Gemini key is available:
 # export GOOGLE_API_KEY="your_key"
