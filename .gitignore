@@ -1,2 +1,3 @@
 .env
-med_categorizer/__pycache__
+incident_parser/__pycache__
+__pycache__

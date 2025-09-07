@@ -38,7 +38,7 @@ class GeminiProvider(LLMProvider):
 
     def extract_fields(self, transcript: str, fields: List[str]) -> Dict[str, str]:
         from .validators import force_string_dict
-        prompt = build_extraction_prompt(transcript, fields)
+        prompt = build_extraction_prompt(transcript, fields, field_descriptions=None)
         user = prompt + "\nReturn ONLY compact JSON."
 
         gen_config = {
