@@ -87,10 +87,10 @@ with tab1:
     if audio is not None:
         # Save audio
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-            f.write(audio)
+            f.write(audio["bytes"])
             audio_path = f.name
 
-        st.audio(audio, format="audio/wav")
+        st.audio(audio["bytes"], format="audio/wav")
 
         # 🔊 Transcribe with Whisper
         model = whisper.load_model("base")
