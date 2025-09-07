@@ -4,3 +4,4 @@ python-dotenv
 google-generativeai   # if GeminiProvider uses Google Gemini API
 requests
 openai-whisper
+python-multipart
