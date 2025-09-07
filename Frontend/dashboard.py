@@ -21,17 +21,39 @@ fire_columns = pd.read_csv("mod_fire.csv")["name"].dropna().tolist()
 
 # 33 column schema 
 COLUMNS = [
-    "incident_neris_id", "incident_internal_id", "incident_final_type",
-    "incident_final_type_primary", "incident_special_modifier", "fire", "medical",
-    "hazsit", "emerging_hazard", "tactic_timestamps", "incident_status",
-    "incident_property_loss_value", "incident_property_loss_value_code",
-    "incident_property_loss_comments", "incident_contents_loss_value",
-    "incident_contents_loss_value_code", "incident_contents_loss_comments",
-    "incident_casualties", "incident_fatalities", "incident_injuries",
-    "incident_civ_casualties", "incident_civ_fatalities", "incident_civ_injuries",
-    "incident_ff_casualties", "incident_ff_fatalities", "incident_ff_injuries",
-    "incident_casualties_comments", "incident_response_time", "incident_departments",
-    "incident_units", "incident_personnel", "incident_geolocation", "incident_address"
+  "incident_neris_id",
+  "incident_internal_id",
+  "incident_final_type",
+  "incident_final_type_primary",
+  "incident_special_modifier",
+  "fire",
+  "medical",
+  "hazsit",
+  "emerging_hazard",
+  "tactic_timestamps",
+  "incident_point",
+  "incident_polygon",
+  "incident_location",
+  "incident_location_use",
+  "incident_people_present",
+  "incident_displaced_number",
+  "incident_displaced_cause",
+  "exposure",
+  "rescue_ff",
+  "rescue_nonff",
+  "incident_rescue_animal",
+  "incident_actions_taken",
+  "incident_noaction",
+  "unit_response",
+  "risk_reduction",
+  "incident_aid_direction",
+  "incident_aid_type",
+  "incident_aid_department_name",
+  "incident_aid_nonfd",
+  "incident_narrative_impediment",
+  "incident_narrative_outcome",
+  "parcel",
+  "weather"
 ]
 
 # Master schema = 33 core + fire-specific
@@ -98,7 +120,7 @@ with tab1:
 # Tab 2: Review & Save 
 with tab2:
     st.header("Please review parsed incident details")
-    st.subheader("Edit fields if needed, then lock them before saving")
+    st.subheader("Edit fields if needed, then approve before saving")
 
     st.divider()
 
@@ -107,81 +129,71 @@ with tab2:
     else:
         parsed = st.session_state["parsed"]
 
-        # Initialize correction state
-        if "corrections" not in st.session_state:
-            st.session_state["corrections"] = {col: False for col in ALL_COLUMNS}
-
-        # Helper to render field
-        def render_field(col, prefix=""):
-            locked = st.session_state["corrections"].get(col, False)
-
-            # Text input (disabled if locked)
-            value = st.text_input(
-                col,
-                value=parsed.get(col, ""),
-                disabled=locked,
-                key=f"{prefix}input_{col}"
-            )
-            parsed[col] = value
-
-            # Checkbox appears below the field
-            lock_state = st.checkbox(
-                f"Lock {col}",
-                value=locked,
-                key=f"{prefix}lock_{col}"
-            )
-            st.session_state["corrections"][col] = lock_state
-
         # Core fields
         st.subheader("Core Incident Fields")
         for col in COLUMNS:
-            render_field(col)
-        
-        st.divider()
+            value = st.text_input(
+                col,
+                value=parsed.get(col, ""),
+                key=f"input_{col}"
+            )
+            parsed[col] = value
 
-        # Fire fields (only if fire flagged)
-        if parsed.get("fire") in ["Yes", "True", 1]:
+
+
+        # Fire fields (auto-appear if fire flagged)
+        if str(parsed.get("fire", "")).lower() in ["yes", "true", "1"]:
+            st.divider()
             st.subheader("🔥 Fire-Specific Fields")
             for col in fire_columns:
-                render_field(col, prefix="fire_")
+                # If backend didn’t send this column, fall back to empty string
+                value=parsed.get(col) if col in parsed else ""
+                value = st.text_input(
+                    col,
+                    value=value,
+                    key=f"input_fire_{col}"
+                )
+                parsed[col] = value
 
-        # Save button (enabled only if all required fields are locked)
-        required_fields = COLUMNS + (fire_columns if parsed.get("fire") in ["Yes", "True", 1] else [])
-        all_locked = all(st.session_state["corrections"].get(col, False) for col in required_fields)
+        # One approval checkbox at the end
+        approved = st.checkbox("I approve this form, it is correct")
 
-        if st.button("Save to CSV", disabled=not all_locked):
+        if st.button("Save to CSV", disabled=not approved):
             save_incident(parsed)
             st.success("Incident saved to CSV!")
 
-
-# Tab 3: Dashboard 
 with tab3:
-    st.header("Incident Dashboard")
+    st.subheader("Incident Dashboard")
 
-    st.divider()
+    if os.path.exists(CSV_FILE):
+        df = pd.read_csv(CSV_FILE)
 
-    df = pd.read_csv(CSV_FILE)
+        # Enforce schema
+        for col in COLUMNS + fire_columns:
+            if col not in df.columns:
+                df[col] = ""
 
-    # Enforce schema with ALL columns
-    for col in ALL_COLUMNS:
-        if col not in df.columns:
-            df[col] = None
-    df = df[ALL_COLUMNS]
-
-    if df.empty:
-        st.info("No incidents yet. Add one to see the dashboard.")
-    else:
-        # Show Core Incidents (33 columns)
-        st.subheader("Core Incident Data (33 Columns)")
+        # Core view
+        st.subheader("Core Incidents")
         st.dataframe(df[COLUMNS])
-        st.bar_chart(df["incident_final_type"].value_counts())
 
+        # Fire-specific view (filter only incidents where fire is true-ish)
+        fire_flagged = df[df["fire"].astype(str).str.lower().isin(["true", "yes", "1"])]
+        if not fire_flagged.empty:
+            st.subheader("Fire-Specific Incidents")
+            st.dataframe(fire_flagged[fire_columns])
+        else:
+            st.info("No fire-specific incidents yet.")
 
-        # Show Fire-Specific Incidents
-        if "fire" in df.columns:
-            fire_df = df[df["fire"].isin(["Yes", "True", 1])][fire_columns]
+        # Download combined CSV (core + fire fields together)
+        st.subheader("Download Full Dataset")
+        combined_csv = df[COLUMNS + fire_columns].to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download Combined CSV",
+            data=combined_csv,
+            file_name="incidents_master.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No incidents yet. Add one to see the dashboard.")
 
-            if not fire_df.empty:
-                st.divider()
-                st.subheader("🔥 Fire-Specific Incident Data")
-                st.dataframe(fire_df)
