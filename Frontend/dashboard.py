@@ -107,7 +107,7 @@ with tab1:
     if st.button("Parse incident") and incident_text.strip():
         try:
             response = requests.post(
-                "http://127.0.0.1:8000/categorize-transcript",
+                "https://operationsmokeybear-dspilots.onrender.com/categorize-transcript",
                 json={"transcript": incident_text},
                 timeout=30
             )
