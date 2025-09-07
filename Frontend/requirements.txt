@@ -5,6 +5,7 @@ openai-whisper
 torch
 requests
 numpy<=2.2
+ffmpeg-python
 numba
 fastapi
 uvicorn
