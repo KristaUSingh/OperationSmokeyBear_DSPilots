@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from st_audiorec import st_audiorec
 import whisper
+import requests
 import tempfile
 import uuid
 import os
@@ -75,18 +76,23 @@ with tab1:
         incident_text = st.text_area("Or type/paste the incident description:")
 
     # Parse incident button
-    if st.button("Parse incident"):
-        # Basic parsing placeholder → fill only some columns, leave others blank
-        parsed = {col: None for col in COLUMNS}
-        parsed["incident_neris_id"] = f"INC-{uuid.uuid4().hex[:6]}"
-        parsed["incident_final_type"] = "Structure Fire" if "fire" in incident_text.lower() else "Unknown"
-        parsed["incident_address"] = "123 Main St" if "main" in incident_text.lower() else ""
-        parsed["incident_injuries"] = "0"
-        parsed["incident_casualties_comments"] = incident_text
-        parsed["incident_status"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if st.button("Parse incident") and incident_text.strip():
+        try:
+            response = requests.post(
+                "http://127.0.0.1:8000/categorize-transcript",
+                json={"transcript": incident_text},
+                timeout=30
+            )
 
-        st.session_state["parsed"] = parsed
-        st.success("Incident parsed! Check the Review tab.")
+            if response.status_code == 200:
+                parsed = response.json().get("fields", {})
+                st.session_state["parsed"] = parsed
+                st.success("Incident parsed via backend! Check the Review tab.")
+            else:
+                st.error(f"Backend error: {response.text}")
+        except Exception as e:
+            st.error(f"Failed to connect to backend: {e}")
+
 
 
 # Tab 2: Review & Save 
