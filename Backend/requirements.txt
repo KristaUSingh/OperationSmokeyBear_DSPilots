@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 python-dotenv
 google-generativeai   # if GeminiProvider uses Google Gemini API
+requests
+openai-whisper
