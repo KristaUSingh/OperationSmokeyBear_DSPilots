@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from st_audiorec import st_audiorec
+from audiorecorder import audiorecorder
 import whisper
 import requests
 import tempfile
@@ -77,13 +77,18 @@ with tab1:
 
     st.divider()
 
-    wav_audio_data = st_audiorec()  # returns recorded audio as wav byte stream
-
     incident_text = ""
 
-    if wav_audio_data is not None:
+    # 🎤 Audio recorder
+    audio = audiorecorder("Start recording", "Stop recording")
+
+    if len(audio) > 0:
+        # Playback the recorded audio
+        st.audio(audio.tobytes(), format="audio/wav")
+
+        # Save to temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
-            f.write(wav_audio_data)
+            f.write(audio.tobytes())
             audio_path = f.name
 
         # 🔊 Local Whisper transcription
@@ -95,6 +100,7 @@ with tab1:
         st.success("Audio transcribed successfully (Whisper local)!")
 
     else:
+        # Fallback manual text input
         incident_text = st.text_area("Or type/paste the incident description:")
 
     # Parse incident button
