@@ -28,6 +28,12 @@ async def api_categorize_transcript(payload: dict):
         provider = GeminiProvider()
         # Do not require fields from user — use categorize_transcript default
         result = categorize_transcript(transcript, provider=provider)
+
+        # DEBUG START - PRINT JSON OUTPUT IN CONSOLE
+        print("=== CATEGORIZATION RESULT ===")
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        print("=== END RESULT ===")
+        # DEBUG END
         return {"fields": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
