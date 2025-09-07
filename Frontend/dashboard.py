@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from st_mic_recorder import mic_recorder
+from streamlit_mic_recorder import mic_recorder
 import whisper
 import requests
 import tempfile
-import uuid
 import os
 
 st.set_page_config(page_title="Operation Smokey Bear", page_icon="🧑‍🚒", layout="wide")
