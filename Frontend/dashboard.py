@@ -16,7 +16,7 @@ st.title("WELCOME TO OPERATION SMOKEY BEAR 🔥🧸!")
 CSV_FILE = "incidents_master.csv"
 
 # Load fire-specific columns from mod_fire.csv
-fire_columns = pd.read_csv("Frontend/mod_fire.csv")["name"].dropna().tolist()
+fire_columns = pd.read_csv("mod_fire.csv")["name"].dropna().tolist()
 
 # 33 column schema 
 COLUMNS = [
@@ -58,7 +58,6 @@ COLUMNS = [
 # Master schema = 33 core + fire-specific
 ALL_COLUMNS = COLUMNS + fire_columns
 
-
 if not os.path.exists(CSV_FILE):
     pd.DataFrame(columns=ALL_COLUMNS).to_csv(CSV_FILE, index=False)
 
@@ -85,30 +84,35 @@ with tab1:
     incident_text = ""
 
     if audio is not None:
-        # Save audio
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
             f.write(audio["bytes"])
             audio_path = f.name
 
         st.audio(audio["bytes"], format="audio/wav")
 
-        # 🔊 Transcribe with Faster-Whisper
-        model = WhisperModel("base", device="cpu")  # "tiny" is faster if needed
-        segments, info = model.transcribe(audio_path)
-        incident_text = " ".join([segment.text for segment in segments])
+        # 🔊 Transcribe with faster-whisper
+        model = WhisperModel("base", device="cpu")
+        segments, _ = model.transcribe(audio_path)
+        transcript = " ".join([segment.text for segment in segments])
 
-        st.write("Transcript:", incident_text)
-        st.success("Audio transcribed successfully (Faster-Whisper local)!")
+        # Save transcript into session state
+        st.session_state["incident_text"] = transcript  
+
+        st.write("Transcript:", transcript)
+        st.success("Audio transcribed successfully (faster-whisper)!")
 
     else:
-        incident_text = st.text_area("Or type/paste the incident description:")
+        # If no audio, fall back to user input
+        default_text = st.session_state.get("incident_text", "")
+        incident_text = st.text_area("Or type/paste the incident description:", value=default_text)
+        st.session_state["incident_text"] = incident_text
 
-    # Parse incident button
-    if st.button("Parse incident") and incident_text.strip():
+
+    if st.button("Parse incident") and st.session_state.get("incident_text", "").strip():
         try:
             response = requests.post(
                 "https://operationsmokeybear-dspilots.onrender.com/categorize-transcript",
-                json={"transcript": incident_text},
+                json={"transcript": st.session_state["incident_text"]},
                 timeout=30
             )
             if response.status_code == 200:
@@ -119,6 +123,7 @@ with tab1:
                 st.error(f"Backend error: {response.text}")
         except Exception as e:
             st.error(f"Failed to connect to backend: {e}")
+
 
 # Tab 2: Review & Save 
 with tab2:
@@ -142,15 +147,12 @@ with tab2:
             )
             parsed[col] = value
 
-
-
         # Fire fields (auto-appear if fire flagged)
         if str(parsed.get("fire", "")).lower() in ["yes", "true", "1"]:
             st.divider()
             st.subheader("🔥 Fire-Specific Fields")
             for col in fire_columns:
-                # If backend didn’t send this column, fall back to empty string
-                value=parsed.get(col) if col in parsed else ""
+                value = parsed.get(col) if col in parsed else ""
                 value = st.text_input(
                     col,
                     value=value,
@@ -188,7 +190,7 @@ with tab3:
         else:
             st.info("No fire-specific incidents yet.")
 
-        # Download combined CSV (core + fire fields together)
+        # Download combined CSV
         st.subheader("Download Full Dataset")
         combined_csv = df[COLUMNS + fire_columns].to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -199,4 +201,3 @@ with tab3:
         )
     else:
         st.info("No incidents yet. Add one to see the dashboard.")
-
