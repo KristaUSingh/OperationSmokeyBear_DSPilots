@@ -3,5 +3,7 @@ uvicorn[standard]
 python-dotenv
 google-generativeai   # if GeminiProvider uses Google Gemini API
 requests
-openai-whisper
 python-multipart
+git+https://github.com/openai/whisper.git
+ffmpeg-python
+torch==2.2.2+cpu -f https://download.pytorch.org/whl/torch_stable.html

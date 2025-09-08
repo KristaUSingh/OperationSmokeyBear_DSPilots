@@ -1,11 +1,14 @@
 streamlit
 pandas
 streamlit-mic-recorder
-openai-whisper
-torch
-requests
 numpy<=2.2
-ffmpeg-python
 numba
 fastapi
 uvicorn
+python-dotenv
+requests
+python-multipart
+git+https://github.com/openai/whisper.git
+ffmpeg-python
+torch==2.2.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
