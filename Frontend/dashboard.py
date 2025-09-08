@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from streamlit_mic_recorder import mic_recorder
-import whisper
+from faster_whisper import WhisperModel
 import requests
 import tempfile
 import os
@@ -92,13 +92,13 @@ with tab1:
 
         st.audio(audio["bytes"], format="audio/wav")
 
-        # 🔊 Transcribe with Whisper
-        model = whisper.load_model("base")
-        result = model.transcribe(audio_path)
-        incident_text = result["text"]
+        # 🔊 Transcribe with Faster-Whisper
+        model = WhisperModel("base", device="cpu")  # "tiny" is faster if needed
+        segments, info = model.transcribe(audio_path)
+        incident_text = " ".join([segment.text for segment in segments])
 
         st.write("Transcript:", incident_text)
-        st.success("Audio transcribed successfully (Whisper local)!")
+        st.success("Audio transcribed successfully (Faster-Whisper local)!")
 
     else:
         incident_text = st.text_area("Or type/paste the incident description:")
@@ -119,7 +119,6 @@ with tab1:
                 st.error(f"Backend error: {response.text}")
         except Exception as e:
             st.error(f"Failed to connect to backend: {e}")
-
 
 # Tab 2: Review & Save 
 with tab2:
