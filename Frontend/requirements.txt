@@ -8,6 +8,5 @@ uvicorn
 python-dotenv
 requests
 python-multipart
-whisper @ git+https://github.com/openai/whisper.git
-torch      # no need to pin exact version, let Render pick latest compatible
+openai-whisper
 ffmpeg-python
