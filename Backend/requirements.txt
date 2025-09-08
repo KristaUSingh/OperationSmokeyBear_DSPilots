@@ -1,9 +1,11 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 fastapi
-uvicorn[standard]
+uvicorn
 python-dotenv
-google-generativeai   # if GeminiProvider uses Google Gemini API
+google-generativeai
 requests
 python-multipart
-git+https://github.com/openai/whisper.git
+openai-whisper @ git+https://github.com/openai/whisper.git
+torch==2.2.2
 ffmpeg-python
-torch==2.2.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
