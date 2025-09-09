@@ -4,6 +4,7 @@ from datetime import datetime
 from streamlit_mic_recorder import mic_recorder
 from faster_whisper import WhisperModel
 import requests
+import time
 import tempfile
 import os
 
@@ -12,6 +13,8 @@ st.set_page_config(page_title="Operation Smokey Bear", page_icon="🧑‍🚒", 
 # ===== CSS THEME =====
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Roboto:wght@400;500&family=Exo+2:wght@600&display=swap');
+
 /* ===== BACKGROUND ===== */
 html, body, .stApp {
     background: radial-gradient(circle at top left, rgba(255,107,53,0.08), transparent 70%),
@@ -21,15 +24,37 @@ html, body, .stApp {
 }
 
 /* ===== TITLE ===== */
-h1 {
+.app-title {
     text-align: center;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Russo One', sans-serif;
     font-weight: 900;
-    font-size: 2.8rem;
+    font-size: 3rem;
     letter-spacing: 2px;
     text-shadow: 0 0 25px #FF6B35, 0 0 50px rgba(255,107,53,0.7);
     margin-bottom: 0.8rem;
 }
+
+/* ===== SECTION HEADERS (subheaders like Incident Dashboard) ===== */
+h2 {
+    font-family: 'Russo One', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    color: #FFFFFF !important;
+    text-shadow: 0 0 12px rgba(255,107,53,0.4);  /* subtle fire glow */
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.8rem !important;
+}
+            
+h3 {
+    font-family: 'Exo 2', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    color: #FFFFFF !important;
+    text-shadow: 0 0 12px rgba(255,107,53,0.4);  /* subtle fire glow */
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.8rem !important;      
+}
+
 
 /* ===== LIVE BADGE ===== */
 .live-badge {
@@ -59,6 +84,13 @@ h1 {
 }
 
 /* ===== TABS ===== */
+.stTabs [role="tab"] p {
+    font-family: 'Exo 2', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px;
+}
+
 .stTabs [role="tablist"] {
     margin-top: 1.5rem;
     gap: 1.5rem;
@@ -84,6 +116,56 @@ h1 {
     box-shadow: 0 4px 15px rgba(255,107,53,0.6);
 }
 
+
+/* ===== SELECTBOX (dropdown) ===== */
+.stSelectbox div[data-baseweb="select"] {
+    background-color: #1C1F26 !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
+    color: white !important;
+    font-family: 'Inter', sans-serif;
+    padding: 6px 10px !important;
+    box-shadow: none !important;
+}
+
+/* Kill the inner orange focus border inside selectbox */
+.stSelectbox div[data-baseweb="select"]:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+    border: 1px solid #FF6B35 !important; /* keep your outer fire border */
+}
+
+/* Dropdown menu (options) */
+.stSelectbox div[data-baseweb="popover"] {
+    background-color: #1C1F26 !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Each option in the dropdown */
+.stSelectbox div[data-baseweb="option"] {
+    background: transparent !important;
+    color: white !important;
+    font-family: 'Inter', sans-serif;
+}
+
+.stSelectbox div[data-baseweb="option"]:hover {
+    background: rgba(255,107,53,0.2) !important;
+}
+
+/* Neutralize selectbox input field but keep functionality */
+.stSelectbox input {
+    color: transparent !important;   /* hide text */
+    background: transparent !important;
+    border: none !important;
+    caret-color: transparent !important; /* hide cursor */
+    width: 0 !important;   /* shrink it down */
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+
 /* ===== INPUT FIELDS ===== */
 textarea, input, .stTextArea textarea {
     border-radius: 10px !important;
@@ -93,6 +175,7 @@ textarea, input, .stTextArea textarea {
     padding: 12px !important;
     font-family: 'Inter', sans-serif;
 }
+            
 textarea:focus, input:focus {
     border: 1px solid #FF6B35 !important;
     box-shadow: 0 0 12px rgba(255,107,53,0.6) !important;
@@ -113,11 +196,106 @@ textarea:focus, input:focus {
     transform: translateY(-2px) scale(1.02);
     box-shadow: 0 0 25px rgba(255,107,53,0.9) !important;
 }
+            
+/* ===== DOWNLOAD BUTTON ===== */
+[data-testid="stDownloadButton"] button {
+    width: 100% !important;
+    padding: 0.8rem 1.2rem !important;
+    border-radius: 12px !important;
+    font-size: 1.1rem !important;
+    background: linear-gradient(135deg, #FF6B35, #D64545) !important;
+    font-weight: bold !important;
+    color: white !important;
+    transition: all 0.3s ease-in-out;
+}
+
+[data-testid="stDownloadButton"] button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 25px rgba(255,107,53,0.9) !important;
+}
+
+            
+/* ===== CARDS ===== */
+.metric-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1.2rem;
+    margin-bottom: 3rem;
+    border-radius: 15px;
+    background: #1C1F26;
+    box-shadow: 0 0 20px rgba(255,107,53,0.25);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease-in-out;
+    min-height: 120px;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 0 35px rgba(255,107,53,0.45);
+}
+
+.metric-card h3 {
+    margin: 0;
+    font-family: 'Russo One', sans-serif;
+    font-size: 1.4rem;
+    color: white;
+}
+
+.metric-card p {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #FF6B35;
+}
+            
+.metric-fire { border-left: 5px solid #FF6B35; }
+.metric-medical { border-left: 5px solid #4CAF50; }
+.metric-hazmat { border-left: 5px solid #FFEB3B; }
+
+/* ===== TABLES ===== */
+[data-testid="stDataFrame"] {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    margin-bottom: 20px;
+}
+
+/* Table headers */
+[data-testid="stDataFrame"] thead tr th {
+    background: #FF6B35 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-family: 'Exo 2', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+/* Table rows */
+[data-testid="stDataFrame"] tbody tr td {
+    background: #1C1F26 !important;
+    color: white !important;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+/* Hover effect */
+[data-testid="stDataFrame"] tbody tr:hover td {
+    background: rgba(255,107,53,0.1) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ===== HEADER =====
-st.title("WELCOME TO OPERATION SMOKEY BEAR 🔥🧸!")
+st.markdown(
+    """
+    <div class="app-title">WELCOME TO OPERATION SMOKEY BEAR 🔥🧸!</div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.markdown(
     """
     <div style="display:flex;justify-content:center;margin-top:-10px;margin-bottom:20px;">
@@ -132,7 +310,7 @@ st.markdown(
 
 # ===== MAIN APP LOGIC =====
 CSV_FILE = "incidents_master.csv"
-fire_columns = pd.read_csv("Frontend/mod_fire.csv")["name"].dropna().tolist()
+fire_columns = pd.read_csv("mod_fire.csv")["name"].dropna().tolist()
 
 COLUMNS = [
   "incident_neris_id","incident_internal_id","incident_final_type","incident_final_type_primary",
@@ -159,16 +337,13 @@ with tab1:
     st.header("Record or enter incident details")
     st.markdown("### 🎤 Tap to Start Recording", unsafe_allow_html=True)
 
-    # 🎤 Mic Button Wrapper
-    st.markdown("<div class='mic-btn-wrapper'><div class='mic-btn' id='mic-button'>", unsafe_allow_html=True)
+    # Mic Button Wrapper
     audio = mic_recorder(
         start_prompt="▶️ Start Recording",
         stop_prompt="⏹ Stop Recording",
         just_once=True,
         use_container_width=True,
-        key="mic_recorder"
     )
-    st.markdown("</div></div>", unsafe_allow_html=True)
 
     incident_text = ""
     if audio is not None:
@@ -182,10 +357,10 @@ with tab1:
         transcript = " ".join([segment.text for segment in segments])
         st.session_state["incident_text"] = transcript  
         st.write("Transcript:", transcript)
-        st.success("Audio transcribed successfully (faster-whisper)!")
+        st.success("Audio transcribed successfully!")
 
     else:
-        # ⬇️ Replace this block with the sample-incidents version
+        # Replace this block with the sample-incidents version
         sample_incidents = {
             "Sample 1": "Eng 201 responded to a reported kitchen fire at 1287 Maple Ave. Light smoke was showing from a two-story private home on arrival. Crew advanced a 1¾” hose line into the first-floor kitchen where flames were found on the stovetop and nearby cabinets. Fire was extinguished with water, and cabinets were overhauled to ensure no hidden fire. Ventilation performed by Truck 107. Cause determined to be unattended cooking oil. Smoke alarm activated and warned residents. One adult resident evaluated for smoke inhalation but refused transport. No firefighter injuries.",
             "Sample 2": "Eng 12 and Rescue 2 responded to a four-vehicle accident at Main St and 5th Ave. One male driver was pinned in a sedan. Extrication was performed using the Jaws-of-Life to remove the driver-side door. Patient was stabilized, C-spine precautions taken, and transported by ambulance. Three additional patients transported for evaluation, two refused transport. Smoke was noted from another vehicle, and the battery was disconnected to prevent fire. Traffic rerouted until DOT set up an arrow board.",
@@ -202,6 +377,8 @@ with tab1:
 
         incident_text = st.text_area("Or type/paste the incident description:", value=default_text)
         st.session_state["incident_text"] = incident_text
+
+
     if st.button("Parse incident") and st.session_state.get("incident_text", "").strip():
         try:
             response = requests.post(
@@ -273,17 +450,33 @@ with tab2:
 
 with tab3:
     st.subheader("Incident Dashboard")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("<div class='metric-card metric-fire'><h3>🔥 Fires</h3><p>12</p></div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown("<div class='metric-card metric-medical'><h3>🚑 Medical</h3><p>7</p></div>", unsafe_allow_html=True)
-    with col3:
-        st.markdown("<div class='metric-card metric-hazmat'><h3>☣ Hazmat</h3><p>2</p></div>", unsafe_allow_html=True)
 
 
     if os.path.exists(CSV_FILE):
         df = pd.read_csv(CSV_FILE)
+        fire_count = df[df["fire"].astype(str).str.lower().isin(["true", "yes", "1"])].shape[0]
+        medical_count = df[df["medical"].astype(str).str.lower().isin(["true", "yes", "1"])].shape[0]
+        hazmat_count = df[df["hazsit"].astype(str).str.lower().isin(["true", "yes", "1"])].shape[0]
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            fire_placeholder = st.empty()
+            for i in range(fire_count + 1):
+                fire_placeholder.markdown(f"<div class='metric-card metric-fire'><h2>🔥 Fires</h2><p>{i}</p></div>", unsafe_allow_html=True)
+                time.sleep(0.02)
+
+        with col2:
+            medical_placeholder = st.empty()
+            for i in range(medical_count + 1):
+                medical_placeholder.markdown(f"<div class='metric-card metric-medical'><h2>🚑 Medical</h2><p>{i}</p></div>", unsafe_allow_html=True)
+                time.sleep(0.02)
+
+        with col3:
+            hazmat_placeholder = st.empty()
+            for i in range(hazmat_count + 1):
+                hazmat_placeholder.markdown(f"<div class='metric-card metric-hazmat'><h2>☣ Hazmat</h2><p>{i}</p></div>", unsafe_allow_html=True)
+                time.sleep(0.02)
 
         # Enforce schema
         for col in COLUMNS + fire_columns:
@@ -303,10 +496,9 @@ with tab3:
             st.info("No fire-specific incidents yet.")
 
         # Download combined CSV
-        st.subheader("Download Full Dataset")
         combined_csv = df[COLUMNS + fire_columns].to_csv(index=False).encode("utf-8")
         st.download_button(
-            label="Download Combined CSV",
+            label="Download Full Dataset",
             data=combined_csv,
             file_name="incidents_master.csv",
             mime="text/csv"
