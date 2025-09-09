@@ -9,55 +9,141 @@ import os
 
 st.set_page_config(page_title="Operation Smokey Bear", page_icon="🧑‍🚒", layout="wide")
 
-# App Title 
+# ===== CSS THEME =====
+st.markdown("""
+<style>
+/* ===== BACKGROUND ===== */
+html, body, .stApp {
+    background: radial-gradient(circle at top left, rgba(255,107,53,0.08), transparent 70%),
+                radial-gradient(circle at bottom right, rgba(79,142,247,0.08), transparent 70%),
+                #0E1117;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ===== TITLE ===== */
+h1 {
+    text-align: center;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 2.8rem;
+    letter-spacing: 2px;
+    text-shadow: 0 0 25px #FF6B35, 0 0 50px rgba(255,107,53,0.7);
+    margin-bottom: 0.8rem;
+}
+
+/* ===== LIVE BADGE ===== */
+.live-badge {
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(255,76,76,0.1);
+    animation: pulse 1.5s infinite;
+}
+.live-dot {
+    width: 10px;
+    height: 10px;
+    background: #FF4C4C;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #FF4C4C;
+}
+@keyframes pulse {
+    0% { box-shadow: 0 0 5px rgba(255, 76, 76, 0.4); }
+    50% { box-shadow: 0 0 15px rgba(255, 76, 76, 1); }
+    100% { box-shadow: 0 0 5px rgba(255, 76, 76, 0.4); }
+}
+
+/* ===== TABS ===== */
+.stTabs [role="tablist"] {
+    margin-top: 1.5rem;
+    gap: 1.5rem;
+    border-bottom: none;
+    justify-content: center;
+}
+.stTabs [role="tab"] {
+    background: #1C1F26;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    color: #A9A9A9;
+    transition: all 0.3s ease;
+}
+.stTabs [role="tab"]:hover {
+    color: white;
+    background: #2a2f3a;
+    transform: scale(1.05);
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(90deg, #FF6B35, #8B5E3C);
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(255,107,53,0.6);
+}
+
+/* ===== INPUT FIELDS ===== */
+textarea, input, .stTextArea textarea {
+    border-radius: 10px !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: #1C1F26 !important;
+    color: white !important;
+    padding: 12px !important;
+    font-family: 'Inter', sans-serif;
+}
+textarea:focus, input:focus {
+    border: 1px solid #FF6B35 !important;
+    box-shadow: 0 0 12px rgba(255,107,53,0.6) !important;
+}
+
+/* ===== BUTTONS ===== */
+.stButton>button {
+    width: 100% !important;
+    padding: 0.8rem 1.2rem !important;
+    border-radius: 12px !important;
+    font-size: 1.1rem !important;
+    background: linear-gradient(135deg, #FF6B35, #D64545) !important;
+    font-weight: bold !important;
+    color: white !important;
+    transition: all 0.3s ease-in-out;
+}
+.stButton>button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 0 25px rgba(255,107,53,0.9) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ===== HEADER =====
 st.title("WELCOME TO OPERATION SMOKEY BEAR 🔥🧸!")
+st.markdown(
+    """
+    <div style="display:flex;justify-content:center;margin-top:-10px;margin-bottom:20px;">
+        <div class="live-badge">
+            <div class="live-dot"></div>
+            LIVE – Incident Speech-to-Text Tool
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# Master CSV setup
+# ===== MAIN APP LOGIC =====
 CSV_FILE = "incidents_master.csv"
+fire_columns = pd.read_csv("mod_fire.csv")["name"].dropna().tolist()
 
-# Load fire-specific columns from mod_fire.csv
-fire_columns = pd.read_csv("Frontend/mod_fire.csv")["name"].dropna().tolist()
-
-# 33 column schema 
 COLUMNS = [
-  "incident_neris_id",
-  "incident_internal_id",
-  "incident_final_type",
-  "incident_final_type_primary",
-  "incident_special_modifier",
-  "fire",
-  "medical",
-  "hazsit",
-  "emerging_hazard",
-  "tactic_timestamps",
-  "incident_point",
-  "incident_polygon",
-  "incident_location",
-  "incident_location_use",
-  "incident_people_present",
-  "incident_displaced_number",
-  "incident_displaced_cause",
-  "exposure",
-  "rescue_ff",
-  "rescue_nonff",
-  "incident_rescue_animal",
-  "incident_actions_taken",
-  "incident_noaction",
-  "unit_response",
-  "risk_reduction",
-  "incident_aid_direction",
-  "incident_aid_type",
-  "incident_aid_department_name",
-  "incident_aid_nonfd",
-  "incident_narrative_impediment",
-  "incident_narrative_outcome",
-  "parcel",
-  "weather"
+  "incident_neris_id","incident_internal_id","incident_final_type","incident_final_type_primary",
+  "incident_special_modifier","fire","medical","hazsit","emerging_hazard","tactic_timestamps",
+  "incident_point","incident_polygon","incident_location","incident_location_use","incident_people_present",
+  "incident_displaced_number","incident_displaced_cause","exposure","rescue_ff","rescue_nonff",
+  "incident_rescue_animal","incident_actions_taken","incident_noaction","unit_response","risk_reduction",
+  "incident_aid_direction","incident_aid_type","incident_aid_department_name","incident_aid_nonfd",
+  "incident_narrative_impediment","incident_narrative_outcome","parcel","weather"
 ]
-
-# Master schema = 33 core + fire-specific
 ALL_COLUMNS = COLUMNS + fire_columns
-
 if not os.path.exists(CSV_FILE):
     pd.DataFrame(columns=ALL_COLUMNS).to_csv(CSV_FILE, index=False)
 
@@ -66,48 +152,56 @@ def save_incident(data):
     df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
     df.to_csv(CSV_FILE, index=False)
 
-# Tabs
+# ===== TABS =====
 tab1, tab2, tab3 = st.tabs(["🎙️ Record / Input", "🧾 Review & Save", "📊 Dashboard"])
 
 with tab1:
     st.header("Record or enter incident details")
-    st.divider()
+    st.markdown("### 🎤 Tap to Start Recording", unsafe_allow_html=True)
 
-    # 🎤 Record audio
+    # 🎤 Mic Button Wrapper
+    st.markdown("<div class='mic-btn-wrapper'><div class='mic-btn' id='mic-button'>", unsafe_allow_html=True)
     audio = mic_recorder(
-        start_prompt="Start recording",
-        stop_prompt="Stop recording",
+        start_prompt="▶️ Start Recording",
+        stop_prompt="⏹ Stop Recording",
         just_once=True,
-        use_container_width=True
+        use_container_width=True,
+        key="mic_recorder"
     )
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
     incident_text = ""
-
     if audio is not None:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
             f.write(audio["bytes"])
             audio_path = f.name
-
         st.audio(audio["bytes"], format="audio/wav")
 
-        # 🔊 Transcribe with faster-whisper
         model = WhisperModel("base", device="cpu")
         segments, _ = model.transcribe(audio_path)
         transcript = " ".join([segment.text for segment in segments])
-
-        # Save transcript into session state
         st.session_state["incident_text"] = transcript  
-
         st.write("Transcript:", transcript)
         st.success("Audio transcribed successfully (faster-whisper)!")
 
     else:
-        # If no audio, fall back to user input
-        default_text = st.session_state.get("incident_text", "")
+        # ⬇️ Replace this block with the sample-incidents version
+        sample_incidents = {
+            "Sample 1": "Eng 201 responded to a reported kitchen fire at 1287 Maple Ave. Light smoke was showing from a two-story private home on arrival. Crew advanced a 1¾” hose line into the first-floor kitchen where flames were found on the stovetop and nearby cabinets. Fire was extinguished with water, and cabinets were overhauled to ensure no hidden fire. Ventilation performed by Truck 107. Cause determined to be unattended cooking oil. Smoke alarm activated and warned residents. One adult resident evaluated for smoke inhalation but refused transport. No firefighter injuries.",
+            "Sample 2": "Eng 12 and Rescue 2 responded to a four-vehicle accident at Main St and 5th Ave. One male driver was pinned in a sedan. Extrication was performed using the Jaws-of-Life to remove the driver-side door. Patient was stabilized, C-spine precautions taken, and transported by ambulance. Three additional patients transported for evaluation, two refused transport. Smoke was noted from another vehicle, and the battery was disconnected to prevent fire. Traffic rerouted until DOT set up an arrow board.",
+            "Sample 3": "Eng 21 responded to a vehicle fire on I-495. On arrival, crew found a sedan with the engine compartment fully involved in flames on the right shoulder. Traffic slowed and a single lane was blocked for safety. Fire extinguished using one 1¾” hose line with foam added to suppress fuel vapors. Battery disconnected after extinguishment. Absorbent applied to leaking motor oil and transmission fluid. Vehicle turned over to tow company after overhaul was completed.",
+            "Sample 4": "Eng 8, Truck 33, and Rescue 4 responded to reports of smoke coming from a three-story apartment building at 457 Lincoln Blvd. On arrival, heavy smoke visible from the second-floor windows. Crew advanced a 1¾” hose line to second floor, fire located in bedroom and confined to one unit. Primary and secondary searches negative. Ventilation performed by Truck 33. Utilities secured and fire under control within 20 minutes. Three residents displaced; Red Cross notified. No injuries."
+        }
+
+        selected_sample = st.selectbox("Or pick a sample incident:", ["None"] + list(sample_incidents.keys()))
+
+        if selected_sample != "None":
+            default_text = sample_incidents[selected_sample]
+        else:
+            default_text = st.session_state.get("incident_text", "")
+
         incident_text = st.text_area("Or type/paste the incident description:", value=default_text)
         st.session_state["incident_text"] = incident_text
-
-
     if st.button("Parse incident") and st.session_state.get("incident_text", "").strip():
         try:
             response = requests.post(
@@ -124,10 +218,10 @@ with tab1:
         except Exception as e:
             st.error(f"Failed to connect to backend: {e}")
 
-
 # Tab 2: Review & Save 
 with tab2:
     st.header("Please review parsed incident details")
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.subheader("Edit fields if needed, then approve before saving")
 
     st.divider()
@@ -139,10 +233,14 @@ with tab2:
 
         # Core fields
         st.subheader("Core Incident Fields")
-        for col in COLUMNS:
+        parsed_items = [(col, parsed.get(col, "")) for col in COLUMNS]
+        # Filled fields first, empty after
+        parsed_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
+
+        for col, value in parsed_items:
             value = st.text_input(
-                col,
-                value=parsed.get(col, ""),
+                f"{col}",
+                value=value,
                 key=f"input_{col}"
             )
             parsed[col] = value
@@ -151,10 +249,13 @@ with tab2:
         if str(parsed.get("fire", "")).lower() in ["yes", "true", "1"]:
             st.divider()
             st.subheader("🔥 Fire-Specific Fields")
-            for col in fire_columns:
-                value = parsed.get(col) if col in parsed else ""
+
+            fire_items = [(col, parsed.get(col, "")) for col in fire_columns]
+            fire_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
+
+            for col, value in fire_items:
                 value = st.text_input(
-                    col,
+                    f"{col}",
                     value=value,
                     key=f"input_fire_{col}"
                 )
@@ -166,9 +267,20 @@ with tab2:
         if st.button("Save to CSV", disabled=not approved):
             save_incident(parsed)
             st.success("Incident saved to CSV!")
+    
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
 with tab3:
     st.subheader("Incident Dashboard")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("<div class='metric-card metric-fire'><h3>🔥 Fires</h3><p>12</p></div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("<div class='metric-card metric-medical'><h3>🚑 Medical</h3><p>7</p></div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown("<div class='metric-card metric-hazmat'><h3>☣ Hazmat</h3><p>2</p></div>", unsafe_allow_html=True)
+
 
     if os.path.exists(CSV_FILE):
         df = pd.read_csv(CSV_FILE)

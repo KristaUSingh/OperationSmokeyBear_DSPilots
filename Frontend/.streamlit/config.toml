@@ -1,6 +1,13 @@
-    [theme]
-    primaryColor="#666666"
-    backgroundColor="#000000"
-    secondaryBackgroundColor="#4f8ff7"
-    textColor="#ffffff"
-    font="sans serif"
+[theme]
+# Base colors
+backgroundColor = "#0E1117"            # Jet black
+secondaryBackgroundColor = "#1C1F26"  # Card contrast dark gray
+textColor = "#FFFFFF"                 # White text
+
+# Accents
+primaryColor = "#FF6B35"              # Fire orange (buttons, highlights)
+
+# You can swap in these extras if needed:
+# forest green  = #3E8E41
+# smokey brown  = #8B5E3C
+# incident blue = #4F8EF7
