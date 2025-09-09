@@ -132,7 +132,7 @@ st.markdown(
 
 # ===== MAIN APP LOGIC =====
 CSV_FILE = "incidents_master.csv"
-fire_columns = pd.read_csv("mod_fire.csv")["name"].dropna().tolist()
+fire_columns = pd.read_csv("Frontend/mod_fire.csv")["name"].dropna().tolist()
 
 COLUMNS = [
   "incident_neris_id","incident_internal_id","incident_final_type","incident_final_type_primary",
