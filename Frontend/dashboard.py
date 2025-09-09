@@ -345,9 +345,9 @@ tab1, tab2, tab3 = st.tabs(["🎙️ Record / Input", "🧾 Review & Save", "�
 
 with tab1:
     st.header("Record or enter incident details")
-    st.markdown("### 🎤 Tap to Start Live Recording", unsafe_allow_html=True)
+    st.markdown("### 🎤 Tap to Start Recording", unsafe_allow_html=True)
 
-    # Mic Button Wrapper
+    # ===== Mic Recording =====
     audio = mic_recorder(
         start_prompt="▶️ Start Recording",
         stop_prompt="⏹ Stop Recording",
@@ -356,12 +356,12 @@ with tab1:
     )
 
     incident_text = ""
+
     if audio is not None:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
             f.write(audio["bytes"])
             audio_path = f.name
         st.audio(audio["bytes"], format="audio/wav")
-
         model = WhisperModel("base", device="cpu")
         segments, _ = model.transcribe(audio_path)
         transcript = " ".join([segment.text for segment in segments])
@@ -369,40 +369,53 @@ with tab1:
         st.write("Transcript:", transcript)
         st.success("Audio transcribed successfully!")
 
-    # ===== Pre-Recorded Audio =====
-    st.markdown("### Or select one of the following:")
-    selected_audio = st.selectbox("Choose a sample audio:", ["None"] + list(SAMPLE_AUDIO.keys()))
-
-    if selected_audio != "None":
-        if st.button("Transcribe Selected Audio"):
-            file_path = SAMPLE_AUDIO[selected_audio]
-            model = WhisperModel("base", device="cpu")
-            segments, _ = model.transcribe(file_path)
-            transcript = " ".join([segment.text for segment in segments])
-            st.session_state["incident_text"] = transcript
-            st.success(f"Transcription from {selected_audio}:")
-            st.write(transcript)
 
     else:
-        # Replace this block with the sample-incidents version
-        sample_incidents = {
+        # ===== Choice between Pre-recorded audio OR Sample Text OR Free typing =====
+        st.divider()
+
+        st.subheader("Or select one of the following:")
+        choice = st.radio(
+            "Select input method:",
+            ["Type/Paste Incident", "Pre-Recorded Audio", "Sample Text"],
+            index=0,
+            horizontal=True
+        )
+
+        if choice == "Pre-Recorded Audio":
+            selected_audio = st.selectbox("Choose a sample audio:", ["None"] + list(SAMPLE_AUDIO.keys()))
+            if selected_audio != "None":
+                if st.button("Transcribe Audio"):
+                    file_path = SAMPLE_AUDIO[selected_audio]
+                    model = WhisperModel("base", device="cpu")
+                    segments, _ = model.transcribe(file_path)
+                    transcript = " ".join([segment.text for segment in segments])
+                    st.session_state["incident_text"] = transcript
+                    st.success(f"Transcript from {selected_audio}:")
+                    st.write(transcript)
+
+        elif choice == "Sample Text":
+            sample_incidents = {
             "Sample 1": "Eng 201 responded to a reported kitchen fire at 1287 Maple Ave. Light smoke was showing from a two-story private home on arrival. Crew advanced a 1¾” hose line into the first-floor kitchen where flames were found on the stovetop and nearby cabinets. Fire was extinguished with water, and cabinets were overhauled to ensure no hidden fire. Ventilation performed by Truck 107. Cause determined to be unattended cooking oil. Smoke alarm activated and warned residents. One adult resident evaluated for smoke inhalation but refused transport. No firefighter injuries.",
             "Sample 2": "Eng 12 and Rescue 2 responded to a four-vehicle accident at Main St and 5th Ave. One male driver was pinned in a sedan. Extrication was performed using the Jaws-of-Life to remove the driver-side door. Patient was stabilized, C-spine precautions taken, and transported by ambulance. Three additional patients transported for evaluation, two refused transport. Smoke was noted from another vehicle, and the battery was disconnected to prevent fire. Traffic rerouted until DOT set up an arrow board.",
             "Sample 3": "Eng 21 responded to a vehicle fire on I-495. On arrival, crew found a sedan with the engine compartment fully involved in flames on the right shoulder. Traffic slowed and a single lane was blocked for safety. Fire extinguished using one 1¾” hose line with foam added to suppress fuel vapors. Battery disconnected after extinguishment. Absorbent applied to leaking motor oil and transmission fluid. Vehicle turned over to tow company after overhaul was completed.",
             "Sample 4": "Eng 8, Truck 33, and Rescue 4 responded to reports of smoke coming from a three-story apartment building at 457 Lincoln Blvd. On arrival, heavy smoke visible from the second-floor windows. Crew advanced a 1¾” hose line to second floor, fire located in bedroom and confined to one unit. Primary and secondary searches negative. Ventilation performed by Truck 33. Utilities secured and fire under control within 20 minutes. Three residents displaced; Red Cross notified. No injuries."
-        }
+            }
+            
+            selected_sample = st.selectbox("Choose a sample incident:", ["None"] + list(sample_incidents.keys()))
+            if selected_sample != "None":
+                transcript = sample_incidents[selected_sample]
+                st.session_state["incident_text"] = transcript
+                st.success(f"Loaded {selected_sample}:")
+                st.write(transcript)
 
-        selected_sample = st.selectbox("Or pick a sample incident:", ["None"] + list(sample_incidents.keys()))
+        else:  # Type/Paste Incident
+            transcript = st.text_area(
+                "Type or paste the incident description:",
+            )
+            st.session_state["incident_text"] = transcript
 
-        if selected_sample != "None":
-            default_text = sample_incidents[selected_sample]
-        else:
-            default_text = st.session_state.get("incident_text", "")
-
-        incident_text = st.text_area("Or type/paste the incident description:", value=default_text)
-        st.session_state["incident_text"] = incident_text
-
-
+    # ===== Parse Button =====
     if st.button("Parse incident") and st.session_state.get("incident_text", "").strip():
         try:
             response = requests.post(
