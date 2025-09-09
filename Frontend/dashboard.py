@@ -437,8 +437,8 @@ with tab1:
         try:
             BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
             response = requests.post(
-                f"{BACKEND_URL}/categorize-transcript",
-                # "https://operationsmokeybear-dspilots.onrender.com/categorize-transcript",
+                #f"{BACKEND_URL}/categorize-transcript",
+                "https://operationsmokeybear-dspilots.onrender.com/categorize-transcript",
                 json={"transcript": st.session_state["incident_text"]},
                 timeout=30
             )
