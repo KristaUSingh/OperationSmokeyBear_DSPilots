@@ -310,7 +310,24 @@ st.markdown(
 
 # ===== MAIN APP LOGIC =====
 CSV_FILE = "incidents_master.csv"
-fire_columns = pd.read_csv("Frontend/mod_fire.csv")["name"].dropna().tolist()
+
+# load core_mod_incident with defintions
+df_core = pd.read_csv("Frontend/core_mod_incident.csv")
+core_columns = df_core["name"].dropna().tolist()
+# create a dict mapping column name -> definition (empty string if missing)
+if "definition" in df_core.columns:
+    core_defs = df_core.set_index("name")["definition"].fillna("").to_dict()
+else:
+    core_defs = {name: "" for name in core_columns}
+
+# load mod_fire with definitions
+df_fire = pd.read_csv("Frontend/mod_fire.csv")
+fire_columns = df_fire["name"].dropna().tolist()
+# create a dict mapping column name -> definition (empty string if missing)
+if "definition" in df_fire.columns:
+    fire_defs = df_fire.set_index("name")["definition"].fillna("").to_dict()
+else:
+    fire_defs = {name: "" for name in fire_columns}
 
 COLUMNS = [
   "incident_neris_id","incident_internal_id","incident_final_type","incident_final_type_primary",
@@ -418,8 +435,10 @@ with tab1:
     # ===== Parse Button =====
     if st.button("Parse incident") and st.session_state.get("incident_text", "").strip():
         try:
+            BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
             response = requests.post(
-                "https://operationsmokeybear-dspilots.onrender.com/categorize-transcript",
+                f"{BACKEND_URL}/categorize-transcript",
+                # "https://operationsmokeybear-dspilots.onrender.com/categorize-transcript",
                 json={"transcript": st.session_state["incident_text"]},
                 timeout=30
             )
@@ -452,8 +471,9 @@ with tab2:
         parsed_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
 
         for col, value in parsed_items:
+            label = f"{col} :: {core_defs.get(col, '')}"
             value = st.text_input(
-                f"{col}",
+                label,
                 value=value,
                 key=f"input_{col}"
             )
@@ -468,8 +488,9 @@ with tab2:
             fire_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
 
             for col, value in fire_items:
+                label = f"{col} :: {fire_defs.get(col, '')}"
                 value = st.text_input(
-                    f"{col}",
+                    label,
                     value=value,
                     key=f"input_fire_{col}"
                 )
