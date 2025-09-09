@@ -321,6 +321,16 @@ COLUMNS = [
   "incident_aid_direction","incident_aid_type","incident_aid_department_name","incident_aid_nonfd",
   "incident_narrative_impediment","incident_narrative_outcome","parcel","weather"
 ]
+
+# ===== Sample Audio Files =====
+SAMPLE_AUDIO = {
+    "Sample Audio #1": "Frontend/sample_audio/sample_audio#1.m4a",
+    "Sample Audio #2": "Frontend/sample_audio/sample_audio#2.m4a",
+    "Sample Audio #3": "Frontend/sample_audio/sample_audio#3.m4a",
+    "Sample Audio #4": "Frontend/sample_audio/sample_audio#4.m4a"
+}
+
+
 ALL_COLUMNS = COLUMNS + fire_columns
 if not os.path.exists(CSV_FILE):
     pd.DataFrame(columns=ALL_COLUMNS).to_csv(CSV_FILE, index=False)
@@ -335,7 +345,7 @@ tab1, tab2, tab3 = st.tabs(["🎙️ Record / Input", "🧾 Review & Save", "�
 
 with tab1:
     st.header("Record or enter incident details")
-    st.markdown("### 🎤 Tap to Start Recording", unsafe_allow_html=True)
+    st.markdown("### 🎤 Tap to Start Live Recording", unsafe_allow_html=True)
 
     # Mic Button Wrapper
     audio = mic_recorder(
@@ -358,6 +368,20 @@ with tab1:
         st.session_state["incident_text"] = transcript  
         st.write("Transcript:", transcript)
         st.success("Audio transcribed successfully!")
+
+    # ===== Pre-Recorded Audio =====
+    st.markdown("### Or select one of the following:")
+    selected_audio = st.selectbox("Choose a sample audio:", ["None"] + list(SAMPLE_AUDIO.keys()))
+
+    if selected_audio != "None":
+        if st.button("Transcribe Selected Audio"):
+            file_path = SAMPLE_AUDIO[selected_audio]
+            model = WhisperModel("base", device="cpu")
+            segments, _ = model.transcribe(file_path)
+            transcript = " ".join([segment.text for segment in segments])
+            st.session_state["incident_text"] = transcript
+            st.success(f"Transcription from {selected_audio}:")
+            st.write(transcript)
 
     else:
         # Replace this block with the sample-incidents version
