@@ -402,6 +402,8 @@ with tab1:
         if choice == "Pre-Recorded Audio":
             selected_audio = st.selectbox("Choose a sample audio:", ["None"] + list(SAMPLE_AUDIO.keys()))
             if selected_audio != "None":
+                file_path = SAMPLE_AUDIO[selected_audio]
+                st.audio(file_path, format="audio/m4a")
                 if st.button("Transcribe Audio"):
                     file_path = SAMPLE_AUDIO[selected_audio]
                     model = WhisperModel("base", device="cpu")
@@ -445,7 +447,7 @@ with tab1:
             if response.status_code == 200:
                 parsed = response.json().get("fields", {})
                 st.session_state["parsed"] = parsed
-                st.success("Incident parsed via backend! Check the Review tab.")
+                st.success("Incident parsed! Check the Review tab.")
             else:
                 st.error(f"Backend error: {response.text}")
         except Exception as e:
@@ -499,7 +501,7 @@ with tab2:
         # One approval checkbox at the end
         approved = st.checkbox("I approve this form, it is correct")
 
-        if st.button("Save to CSV", disabled=not approved):
+        if st.button("Send to Database", disabled=not approved):
             save_incident(parsed)
             st.success("Incident saved to CSV!")
     
