@@ -472,14 +472,32 @@ with tab2:
         # Filled fields first, empty after
         parsed_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
 
-        for col, value in parsed_items:
-            label = f"{col} :: {core_defs.get(col, '')}"
-            value = st.text_input(
-                label,
-                value=value,
-                key=f"input_{col}"
-            )
-            parsed[col] = value
+    for col, data in parsed_items:
+        # Handle both new dict format and legacy string fallback
+        if isinstance(data, dict):
+            value = data.get("value", "")
+            confidence = data.get("confidence", 0.0)
+        else:
+            value, confidence = data, 0.0
+
+        # Format confidence for label
+        conf_pct = f"{confidence * 100:.1f}%"
+        if confidence >= 0.8:
+            icon = "🟢"
+        elif confidence >= 0.6:
+            icon = "🟠"
+        else:
+            icon = "🔴"
+
+        label = f"{icon} {col} ({conf_pct}) :: {core_defs.get(col, '')}"
+
+        value = st.text_input(
+            label,
+            value=value,
+            key=f"input_{col}"
+        )
+        parsed[col] = value
+
 
         # Fire fields (auto-appear if fire flagged)
         if str(parsed.get("fire", "")).lower() in ["yes", "true", "1"]:

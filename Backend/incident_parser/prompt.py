@@ -2,9 +2,9 @@
 from typing import List, Dict, Optional
 
 SYSTEM_INSTRUCTIONS = (
-    "You are an incident-extraction assistant. Read the provided transcript and extract the requested fields. "
     "Return ONLY a single valid JSON object (no code fences, no explanation, no extra text). "
-    "The JSON must use double quotes for keys and values, contain EXACTLY the requested keys, and each value must be a string."
+    "The JSON must use double quotes for keys and values, contain EXACTLY the requested keys, and each value must be an object with 'value' and 'confidence'. "
+    "For example: {\"incident_type\":{\"value\":\"Fire\",\"confidence\":0.92}}."
 )
 
 field_descriptions = {
@@ -82,14 +82,26 @@ Requested fields (exact keys):
 {wanted_json_array}
 
 {desc_block}RULES (follow exactly):
-1. Output: A SINGLE compact JSON object and NOTHING else. Example: {{"example_key":"value"}}.
+1. Output: A SINGLE compact JSON object and NOTHING else.
+   Example: {"incident_type":{"value":"Fire","confidence":0.92}}.
 2. The JSON MUST contain EXACTLY the keys listed above (same spelling).
-3. Each key's value MUST be a JSON string. If the field is not present, set its value to an empty string: "".
-4. Do NOT add any additional keys, metadata, confidence scores, comments, or surrounding text.
+3. Each key's value MUST be an object containing:
+   - "value": the extracted text as a string (or "" if not found)
+   - "confidence": a number between 0.0 and 1.0 representing certainty
+4. Do NOT add any keys other than "value" and "confidence" for each field.
 5. Keep values short and factual (one line). Collapse newlines and excessive whitespace into single spaces.
 6. Booleans -> "true"/"false". Numbers -> string (e.g., "3"). Lists -> items joined by "; ".
 7. If multiple candidates exist, choose the first clear explicit mention.
 8. Output must be compact (single line).
+
+EXAMPLE:
+Transcript: "There was a brush fire in Los Angeles that displaced three people."
+Expected JSON:
+{
+  "incident_final_type": {"value": "fire", "confidence": 0.95},
+  "incident_location": {"value": "Los Angeles", "confidence": 0.9},
+  "incident_displaced_number": {"value": "3", "confidence": 0.92}
+}
 
 TRANSCRIPT:
 {transcript}
