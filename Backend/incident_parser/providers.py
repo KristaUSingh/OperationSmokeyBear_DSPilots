@@ -41,8 +41,8 @@ class GeminiProvider(LLMProvider):
         Extracts fields using Gemini and returns both value and confidence per field.
         Example output:
         {
-        "incident_type": {"value": "Fire", "confidence": 0.92},
-        "incident_location": {"value": "Los Angeles", "confidence": 0.88}
+            "incident_type": {"value": "Fire", "confidence": 0.92},
+            "incident_location": {"value": "Los Angeles", "confidence": 0.88}
         }
         """
         prompt = build_extraction_prompt(transcript, fields, field_descriptions=None)
@@ -68,7 +68,8 @@ class GeminiProvider(LLMProvider):
                 candidates = getattr(resp, "candidates", []) or []
                 if candidates and candidates[0].content and candidates[0].content.parts:
                     pieces = [
-                        p.text for p in candidates[0].content.parts if hasattr(p, "text") and p.text
+                        p.text for p in candidates[0].content.parts
+                        if hasattr(p, "text") and p.text
                     ]
                     text = "\n".join(pieces).strip()
 
@@ -83,14 +84,25 @@ class GeminiProvider(LLMProvider):
         for f in fields:
             entry = data.get(f, {})
             if isinstance(entry, dict):
-                results[f] = {
-                    "value": str(entry.get("value", "")).strip(),
-                    "confidence": float(entry.get("confidence", 0.0)),
-                }
+                val = str(entry.get("value", "")).strip()
+                conf = entry.get("confidence", 0.0)
+
+                # 🧹 Enforce logic: if empty value → confidence = 0.0
+                if not val:
+                    conf = 0.0
+                # Sanitize bad confidence values
+                try:
+                    conf = float(conf)
+                except Exception:
+                    conf = 0.0
+                conf = max(0.0, min(conf, 1.0))
+
+                results[f] = {"value": val, "confidence": conf}
             else:
                 results[f] = {"value": str(entry).strip(), "confidence": 0.0}
 
         return results
+
     
     @staticmethod
     def _safe_json(text: str):
