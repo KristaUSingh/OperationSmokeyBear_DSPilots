@@ -468,47 +468,60 @@ with tab2:
 
         # Core fields
         st.subheader("Core Incident Fields")
-        parsed_items = [(col, parsed.get(col, "")) for col in COLUMNS]
-        # Filled fields first, empty after
+        parsed_items = [(col, parsed.get(col, {})) for col in COLUMNS]
         parsed_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
 
-    for col, data in parsed_items:
-        # Handle both new dict format and legacy string fallback
-        if isinstance(data, dict):
-            value = data.get("value", "")
-            confidence = data.get("confidence", 0.0)
-        else:
-            value, confidence = data, 0.0
+        for col, data in parsed_items:
+            # Handle new dict format + legacy fallback
+            if isinstance(data, dict):
+                value = data.get("value", "")
+                confidence = data.get("confidence", 0.0)
+            else:
+                value, confidence = data, 0.0
 
-        # Format confidence for label
-        conf_pct = f"{confidence * 100:.1f}%"
-        if confidence >= 0.8:
-            icon = "🟢"
-        elif confidence >= 0.6:
-            icon = "🟠"
-        else:
-            icon = "🔴"
+            # Confidence visualization
+            conf_pct = f"{confidence * 100:.1f}%"
+            if confidence >= 0.8:
+                icon = "🟢"
+            elif confidence >= 0.6:
+                icon = "🟠"
+            else:
+                icon = "🔴"
 
-        label = f"{icon} {col} ({conf_pct}) :: {core_defs.get(col, '')}"
+            label = f"{icon} {col} ({conf_pct}) :: {core_defs.get(col, '')}"
 
-        value = st.text_input(
-            label,
-            value=value,
-            key=f"input_{col}"
-        )
-        parsed[col] = value
+            value = st.text_input(
+                label,
+                value=value,
+                key=f"input_{col}"
+            )
+            parsed[col] = value
 
-
-        # Fire fields (auto-appear if fire flagged)
+        # 🔥 Fire-specific fields (only if fire flagged)
         if str(parsed.get("fire", "")).lower() in ["yes", "true", "1"]:
             st.divider()
             st.subheader("🔥 Fire-Specific Fields")
 
-            fire_items = [(col, parsed.get(col, "")) for col in fire_columns]
+            fire_items = [(col, parsed.get(col, {})) for col in fire_columns]
             fire_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
 
-            for col, value in fire_items:
-                label = f"{col} :: {fire_defs.get(col, '')}"
+            for col, data in fire_items:
+                if isinstance(data, dict):
+                    value = data.get("value", "")
+                    confidence = data.get("confidence", 0.0)
+                else:
+                    value, confidence = data, 0.0
+
+                conf_pct = f"{confidence * 100:.1f}%"
+                if confidence >= 0.8:
+                    icon = "🟢"
+                elif confidence >= 0.6:
+                    icon = "🟠"
+                else:
+                    icon = "🔴"
+
+                label = f"{icon} {col} ({conf_pct}) :: {fire_defs.get(col, '')}"
+
                 value = st.text_input(
                     label,
                     value=value,
@@ -516,14 +529,14 @@ with tab2:
                 )
                 parsed[col] = value
 
-        # One approval checkbox at the end
         approved = st.checkbox("I approve this form, it is correct")
 
         if st.button("Send to Database", disabled=not approved):
             save_incident(parsed)
             st.success("Incident saved to CSV!")
-    
+
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 with tab3:
