@@ -15,7 +15,7 @@ class GeminiProvider(LLMProvider):
     """
     def __init__(
         self,
-        model_name: str = "gemini-2.5-flash-lite",  
+        model_name: str = "gemini-2.5-flash-lite", 
         temperature: float = 0.0,
         max_output_tokens: int = 1024,
         safety_settings: Optional[list] = None,
