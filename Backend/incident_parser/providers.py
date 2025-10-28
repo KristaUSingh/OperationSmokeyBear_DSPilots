@@ -87,10 +87,11 @@ class GeminiProvider(LLMProvider):
                 val = str(entry.get("value", "")).strip()
                 conf = entry.get("confidence", 0.0)
 
-                # 🧹 Enforce logic: if empty value → confidence = 0.0
-                if not val:
+                # 🧹 Only set confidence=0 if value is *truly empty*, not "false" or "0"
+                if val == "":
                     conf = 0.0
-                # Sanitize bad confidence values
+
+                # Sanitize confidence
                 try:
                     conf = float(conf)
                 except Exception:
@@ -102,6 +103,7 @@ class GeminiProvider(LLMProvider):
                 results[f] = {"value": str(entry).strip(), "confidence": 0.0}
 
         return results
+
 
     
     @staticmethod
