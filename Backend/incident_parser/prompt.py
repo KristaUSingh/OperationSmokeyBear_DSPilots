@@ -83,26 +83,18 @@ Requested fields (exact keys):
 
 {desc_block}RULES (follow exactly):
 1. Output: A SINGLE compact JSON object and NOTHING else.
-   Example: {"incident_type":{"value":"Fire","confidence":0.92}}.
-2. The JSON MUST contain EXACTLY the keys listed above (same spelling).
+   Example: {{"incident_final_type": {{"value": "fire", "confidence": 0.92}}}}.
+2. The JSON MUST contain EXACTLY the keys listed above.
 3. Each key's value MUST be an object containing:
-   - "value": the extracted text as a string (or "" if not found)
-   - "confidence": a number between 0.0 and 1.0 representing certainty
-4. Do NOT add any keys other than "value" and "confidence" for each field.
-5. Keep values short and factual (one line). Collapse newlines and excessive whitespace into single spaces.
-6. Booleans -> "true"/"false". Numbers -> string (e.g., "3"). Lists -> items joined by "; ".
-7. If multiple candidates exist, choose the first clear explicit mention.
-8. Output must be compact (single line).
-
-EXAMPLE:
-Transcript: "There was a brush fire in Los Angeles that displaced three people."
-Expected JSON:
-{
-  "incident_final_type": {"value": "fire", "confidence": 0.95},
-  "incident_location": {"value": "Los Angeles", "confidence": 0.9},
-  "incident_displaced_number": {"value": "3", "confidence": 0.92}
-}
+   - "value": extracted text (or "" if not found)
+   - "confidence": number 0.0–1.0 representing certainty.
+4. No keys other than 'value' and 'confidence'.
+5. Keep all values short and factual (single line).
+6. Booleans → "true"/"false"; Numbers → strings.
+7. Lists → items joined by "; ".
+8. If uncertain, return empty string for value and 0.0 for confidence.
 
 TRANSCRIPT:
 {transcript}
 """
+
