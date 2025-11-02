@@ -7,3 +7,7 @@ python-dotenv
 requests
 python-multipart
 faster-whisper
+sentence-transformers==3.2.1
+torch
+
+
