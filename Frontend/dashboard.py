@@ -7,6 +7,34 @@ import requests
 import time
 import tempfile
 import os
+from sentence_transformers import SentenceTransformer, util
+import numpy as np
+
+@st.cache_resource
+def load_model():
+    # Always force CPU to avoid MPS device mismatches
+    return SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+
+model = load_model()
+
+def get_sentence_embeddings(text):
+    sentences = [s.strip() for s in text.split('.') if s.strip()]
+    # Always encode on CPU
+    embeddings = model.encode(sentences, convert_to_tensor=True, device="cpu")
+    return sentences, embeddings.cpu()
+
+def find_best_sentence(value, sentences, sentence_embs):
+    if not value or not sentences:
+        return "", 0.0
+
+    # Ensure both embeddings are on the same device (CPU)
+    value_emb = model.encode(value, convert_to_tensor=True, device="cpu").cpu()
+    sentence_embs = sentence_embs.cpu()
+    cos_sim = util.cos_sim(value_emb, sentence_embs)[0]
+    best_idx = int(np.argmax(cos_sim.numpy()))
+    return sentences[best_idx], float(cos_sim[best_idx].item())
+
+
 
 st.set_page_config(page_title="Operation Smokey Bear", page_icon="🧑‍🚒", layout="wide")
 
@@ -473,69 +501,145 @@ with tab2:
         parsed = st.session_state["approved_parsed"]
 
         # Core fields
-        st.subheader("Core Incident Fields")
-        parsed_items = [(col, parsed.get(col, {})) for col in COLUMNS]
-        parsed_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
+        # ====== ORIGINAL TEXT HIGHLIGHT SETUP ======
+        # Make sure the transcript exists in session_state
+        if "incident_text" in st.session_state:
+            original_text = st.session_state["incident_text"]
+            sentences, sentence_embs = get_sentence_embeddings(original_text)
+        else:
+            original_text = ""
+            sentences, sentence_embs = [], None
 
-        for col, data in parsed_items:
-            # Handle dict format + fallback
-            if isinstance(data, dict):
-                value = data.get("value", "")
-                confidence = data.get("confidence", 0.0)
-            else:
-                value, confidence = data, 0.0
+        # Initialize storage for best matches
+        if "field_sources" not in st.session_state:
+            st.session_state["field_sources"] = {}
 
-            conf_pct = f"{confidence * 100:.1f}%"
-            if confidence >= 0.8:
-                icon = "🟢"
-            elif confidence >= 0.6:
-                icon = "🟠"
-            else:
-                icon = "🔴"
+        # ====== Side-by-side layout ======
+        left_col, right_col = st.columns([0.55, 0.45])
 
-            label = f"{icon} {col} ({conf_pct}) :: {core_defs.get(col, '')}"
+        with left_col:
+            st.subheader("Core Incident Fields")
+            parsed_items = [(col, parsed.get(col, {})) for col in COLUMNS]
+            parsed_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
 
-            new_value = st.text_input(
-                label,
-                value=value,
-                key=f"input_{col}"
-            )
-
-            # Preserve both value + confidence
-            parsed[col] = {"value": new_value, "confidence": confidence}
-
-        # Fire-specific fields
-        if str(parsed.get("fire", {}).get("value", "")).lower() in ["yes", "true", "1"]:
-            st.divider()
-            st.subheader("🔥 Fire-Specific Fields")
-
-            fire_items = [(col, parsed.get(col, {})) for col in fire_columns]
-            fire_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
-
-            for col, data in fire_items:
+            for col, data in parsed_items:
                 if isinstance(data, dict):
                     value = data.get("value", "")
                     confidence = data.get("confidence", 0.0)
                 else:
                     value, confidence = data, 0.0
 
+                if value and sentences:
+                    best_sentence, sim_score = find_best_sentence(value, sentences, sentence_embs)
+                    st.session_state["field_sources"][col] = {
+                        "sentence": best_sentence,
+                        "similarity": sim_score
+                    }
+
                 conf_pct = f"{confidence * 100:.1f}%"
-                if confidence >= 0.8:
-                    icon = "🟢"
-                elif confidence >= 0.6:
-                    icon = "🟠"
+                icon = "🟢" if confidence >= 0.8 else "🟠" if confidence >= 0.6 else "🔴"
+
+                # Inline field description
+                field_description = core_defs.get(col, "")
+                if field_description:
+                    label = f"{icon} **{col}** ({conf_pct}) :: {field_description}"
                 else:
-                    icon = "🔴"
+                    label = f"{icon} **{col}** ({conf_pct})"
 
-                label = f"{icon} {col} ({conf_pct}) :: {fire_defs.get(col, '')}"
+                col_clicked = st.button(label, key=f"btn_{col}")
 
-                new_value = st.text_input(
-                    label,
-                    value=value,
-                    key=f"input_fire_{col}"
-                )
 
+                if col_clicked:
+                    st.session_state["highlight_field"] = col
+
+                new_value = st.text_input(f"Value for {col}", value=value, key=f"input_{col}")
                 parsed[col] = {"value": new_value, "confidence": confidence}
+                # Add spacing between fields
+                st.markdown("<div style='margin-bottom: 35px;'></div>", unsafe_allow_html=True)
+
+
+        with right_col:
+            st.subheader("Original Text")
+            highlight_field = st.session_state.get("highlight_field")
+            highlighted_text = original_text
+            if highlight_field and highlight_field in st.session_state["field_sources"]:
+                sentence_to_highlight = st.session_state["field_sources"][highlight_field]["sentence"]
+                if sentence_to_highlight:
+                    highlighted_text = highlighted_text.replace(
+                        sentence_to_highlight,
+                        f"<mark style='background-color:#ffcc80; color:black'>{sentence_to_highlight}</mark>"
+                    )
+            st.markdown(
+                f"<div style='background-color:#1e1e1e; padding:1em; border-radius:10px; color:white; min-height:400px'>{highlighted_text}</div>",
+                unsafe_allow_html=True
+            )
+
+        # Fire-specific fields
+        if str(parsed.get("fire", {}).get("value", "")).lower() in ["yes", "true", "1"]:
+            st.divider()
+            st.subheader("🔥 Fire-Specific Fields")
+
+            # === Side-by-side layout ===
+            fire_left, fire_right = st.columns([0.55, 0.45])
+
+            with fire_left:
+                fire_items = [(col, parsed.get(col, {})) for col in fire_columns]
+                fire_items.sort(key=lambda x: (x[1] == "" or str(x[1]).strip() == ""))
+
+                for col, data in fire_items:
+                    if isinstance(data, dict):
+                        value = data.get("value", "")
+                        confidence = data.get("confidence", 0.0)
+                    else:
+                        value, confidence = data, 0.0
+
+                    conf_pct = f"{confidence * 100:.1f}%"
+                    icon = "🟢" if confidence >= 0.8 else "🟠" if confidence >= 0.6 else "🔴"
+
+                    # ===== 🔍 Find best-matching sentence =====
+                    if value and sentences:
+                        best_sentence, sim_score = find_best_sentence(value, sentences, sentence_embs)
+                        st.session_state["field_sources"][col] = {
+                            "sentence": best_sentence,
+                            "similarity": sim_score
+                        }
+
+                    # ===== 🧾 Label + Description =====
+                    field_description = fire_defs.get(col, "")
+                    if field_description:
+                        label = f"{icon} **{col}** ({conf_pct}) :: {field_description}"
+                    else:
+                        label = f"{icon} **{col}** ({conf_pct})"
+
+                    # ===== 🔘 Clickable button =====
+                    col_clicked = st.button(label, key=f"btn_fire_{col}")
+                    if col_clicked:
+                        st.session_state["highlight_field"] = col
+
+                    # ===== ✏️ Editable field =====
+                    new_value = st.text_input(f"Value for {col}", value=value, key=f"input_fire_{col}")
+                    parsed[col] = {"value": new_value, "confidence": confidence}
+
+                    # ===== 📏 Spacing =====
+                    st.markdown("<div style='margin-bottom: 35px;'></div>", unsafe_allow_html=True)
+
+            with fire_right:
+                st.subheader("Original Text")
+                highlight_field = st.session_state.get("highlight_field")
+                highlighted_text = original_text
+
+                if highlight_field and highlight_field in st.session_state["field_sources"]:
+                    sentence_to_highlight = st.session_state["field_sources"][highlight_field]["sentence"]
+                    if sentence_to_highlight:
+                        highlighted_text = highlighted_text.replace(
+                            sentence_to_highlight,
+                            f"<mark style='background-color:#ffcc80; color:black'>{sentence_to_highlight}</mark>"
+                        )
+
+                st.markdown(
+                    f"<div style='background-color:#1e1e1e; padding:1em; border-radius:10px; color:white; min-height:400px'>{highlighted_text}</div>",
+                    unsafe_allow_html=True
+                )
 
         # Preserve the form after approval
         approved = st.checkbox("I approve this form, it is correct")
@@ -546,7 +650,6 @@ with tab2:
             st.success("Incident saved to CSV!")
 
         st.markdown("</div>", unsafe_allow_html=True)
-
 
 
 
