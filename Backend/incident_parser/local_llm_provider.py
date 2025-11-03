@@ -25,13 +25,14 @@ class OllamaProvider(LLMProvider):
     """
     def __init__(
         self,
-        model_name: str = "qwen2.5:7b",
-        base_url: str = "http://localhost:11434",
+        model_name: str = None,
+        base_url: str = None,
         temperature: float = 0.0,
         max_tokens: int = 4096,
     ):
-        self.model_name = model_name
-        self.base_url = base_url
+        # Read from environment variables if not provided
+        self.model_name = model_name or os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.temperature = temperature
         self.max_tokens = max_tokens
         
