@@ -54,6 +54,8 @@ class OllamaProvider(LLMProvider):
         }
         
         try:
+            print(f"🔍 Calling Ollama: {self.base_url}/api/generate")
+            print(f"🔍 Model: {self.model_name}")
             response = requests.post(
                 f"{self.base_url}/api/generate",
                 json=payload,
@@ -63,9 +65,12 @@ class OllamaProvider(LLMProvider):
             
             result = response.json()
             text = result.get("response", "").strip()
+            print(f"🔍 Ollama response length: {len(text)} chars")
+            print(f"🔍 First 200 chars: {text[:200]}")
             
             # Parse JSON response
             data = self._safe_json(text)
+            print(f"🔍 Parsed JSON keys: {list(data.keys())[:10]}")
             results = {}
             
             for f in fields:
