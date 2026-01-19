@@ -60,7 +60,7 @@ class OllamaProvider(LLMProvider):
             response = requests.post(
                 f"{self.base_url}/api/generate",
                 json=payload,
-                timeout=120  # 2 minutes max
+                timeout=300  # 5 minutes max for slower models
             )
             response.raise_for_status()
             
