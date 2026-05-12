@@ -378,8 +378,13 @@ if not os.path.exists(CSV_FILE):
     pd.DataFrame(columns=ALL_COLUMNS).to_csv(CSV_FILE, index=False)
 
 def save_incident(data):
+    # Unwrap {value, confidence} dicts → plain values only
+    flat = {
+        col: (v["value"] if isinstance(v, dict) and "value" in v else v)
+        for col, v in data.items()
+    }
     df = pd.read_csv(CSV_FILE)
-    df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
+    df = pd.concat([df, pd.DataFrame([flat])], ignore_index=True)
     df.to_csv(CSV_FILE, index=False)
 
 # ===== TABS =====
