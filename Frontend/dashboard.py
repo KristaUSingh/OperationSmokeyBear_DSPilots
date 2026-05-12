@@ -657,6 +657,12 @@ with tab2:
 
 with tab3:
     st.subheader("Incident Dashboard")
+    
+    with st.expander(" Danger Zone"):
+        if st.button(" Clear All Data", type="secondary"):
+            pd.DataFrame(columns=ALL_COLUMNS).to_csv(CSV_FILE, index=False)
+            st.success("CSV cleared!")
+            st.rerun()
 
 
     if os.path.exists(CSV_FILE):
