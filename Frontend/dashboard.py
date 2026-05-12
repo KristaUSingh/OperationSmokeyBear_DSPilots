@@ -11,29 +11,26 @@ from sentence_transformers import SentenceTransformer, util
 import numpy as np
 
 @st.cache_resource
-def load_model():
-    # Always force CPU to avoid MPS device mismatches
+def load_sentence_model():
     return SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
 
-model = load_model()
+@st.cache_resource
+def load_whisper_model():
+    return WhisperModel("base", device="cpu")
 
 def get_sentence_embeddings(text):
     sentences = [s.strip() for s in text.split('.') if s.strip()]
-    # Always encode on CPU
-    embeddings = model.encode(sentences, convert_to_tensor=True, device="cpu")
+    embeddings = load_sentence_model().encode(sentences, convert_to_tensor=True)
     return sentences, embeddings.cpu()
 
 def find_best_sentence(value, sentences, sentence_embs):
     if not value or not sentences:
         return "", 0.0
-
-    # Ensure both embeddings are on the same device (CPU)
-    value_emb = model.encode(value, convert_to_tensor=True, device="cpu").cpu()
+    value_emb = load_sentence_model().encode(value, convert_to_tensor=True).cpu()
     sentence_embs = sentence_embs.cpu()
     cos_sim = util.cos_sim(value_emb, sentence_embs)[0]
     best_idx = int(np.argmax(cos_sim.numpy()))
     return sentences[best_idx], float(cos_sim[best_idx].item())
-
 
 
 st.set_page_config(page_title="Operation Smokey Bear", page_icon="🧑‍🚒", layout="wide")
@@ -407,8 +404,8 @@ with tab1:
             f.write(audio["bytes"])
             audio_path = f.name
         st.audio(audio["bytes"], format="audio/wav")
-        model = WhisperModel("base", device="cpu")
-        segments, _ = model.transcribe(audio_path)
+        whisper_model = WhisperModel("base", device="cpu")
+        segments, _ = whisper_model.transcribe(audio_path)
         transcript = " ".join([segment.text for segment in segments])
         st.session_state["incident_text"] = transcript  
         st.write("Transcript:", transcript)
@@ -434,8 +431,8 @@ with tab1:
                 st.audio(file_path, format="audio/m4a")
                 if st.button("Transcribe Audio"):
                     file_path = SAMPLE_AUDIO[selected_audio]
-                    model = WhisperModel("base", device="cpu")
-                    segments, _ = model.transcribe(file_path)
+                    whisper_model = WhisperModel("base", device="cpu")
+                    segments, _ = whisper_model.transcribe(file_path)
                     transcript = " ".join([segment.text for segment in segments])
                     st.session_state["incident_text"] = transcript
                     st.success(f"Transcript from {selected_audio}:")
